@@ -12,7 +12,8 @@ app = dash.Dash(__name__)
 df = get_data()
 
 options_list = []
-for name in list(df.columns)[1:]:
+options_list.append({"label":"Texas", "value":"Total"})
+for name in list(df.columns)[1:len(list(df.columns))-1]:
     county_dict = {"label":str(name), "value":str(name)}
     options_list.append(county_dict)
 
@@ -27,25 +28,33 @@ app.layout = html.Div([
             options = options_list,
             multi=False,
             value="Total",
-            style={"width":"35%"}
-            ),
+            style={'width':'35%'}
+    ),
+
+    html.Br(),
+
+    dcc.Dropdown(id='graph-type',
+            options = [
+                {"label":"Cumulative Cases", "value":"Cumulative"},
+                {"label":"New Cases", "value":"New"}
+            ],
+            multi=False,
+            value="Cumulative",
+            style={'width':'40%'}
+    ),
     
     html.Br(),
 
-    dcc.Graph(id='cum_cases_graph', figure={}),
-    
-    html.Br(),
-
-    dcc.Graph(id='new_cases_graph', figure={})
+    dcc.Graph(id='cases_graph', figure={})
   
 ])
 
 @app.callback(
-    [Output(component_id='cum_cases_graph', component_property='figure'),
-    Output(component_id='new_cases_graph', component_property='figure')],
-    [Input(component_id='select-county', component_property='value')]
+    Output(component_id='cases_graph', component_property='figure'),
+    [Input(component_id='select-county', component_property='value'),
+    Input(component_id='graph-type', component_property='value')]
 )
-def update_graph(county_selected):
+def update_graph(county_selected, graph_type):
     
     df_copy = df.copy()
     df_copy['Diff'] = df_copy[county_selected].diff().fillna(df_copy[county_selected])
@@ -60,47 +69,49 @@ def update_graph(county_selected):
         title_str_1 = "Cumulative Cases for " + county_selected + " County"
         title_str_2 = "New Cases for " + county_selected + " County"
 
-    fig1 = px.line(data_frame=df, x='Date', y=county_selected, 
-        title=title_str_1,
-        labels={'Date':"Date", county_selected:"# of Cases"},
-        hover_data=[county_selected]
-    )
-
-    fig1.update_xaxes(
-        rangeslider_visible=True,
-        rangeselector=dict(
-            buttons=list([
-                dict(count=1, label="1m", step="month", stepmode="backward"),
-                dict(count=3, label="3m", step="month", stepmode="backward"),
-                dict(count=6, label="6m", step="month", stepmode="backward"),
-                dict(count=1, label="YTD", step="year", stepmode="todate"),
-                dict(count=1, label="1y", step="year", stepmode="backward"),
-                dict(label="All", step="all")
-            ])
+    if graph_type == "Cumulative":
+        fig = px.line(data_frame=df, x='Date', y=county_selected, 
+            title=title_str_1,
+            labels={'Date':"Date", county_selected:"# of Cases"},
+            hover_data=[county_selected]
         )
-    )
+
+        fig.update_xaxes(
+            rangeslider_visible=False,
+            rangeselector=dict(
+                buttons=list([
+                    dict(count=1, label="1m", step="month", stepmode="backward"),
+                    dict(count=3, label="3m", step="month", stepmode="backward"),
+                    dict(count=6, label="6m", step="month", stepmode="backward"),
+                    dict(count=1, label="YTD", step="year", stepmode="todate"),
+                    dict(count=1, label="1y", step="year", stepmode="backward"),
+                    dict(label="All", step="all")
+                ])
+            )
+        )
     
-    fig2 = px.line(data_frame=df_copy, x='Date', y='Diff',
-        title=title_str_2,
-        labels={'Date':"Date", 'Diff':"# of Cases"},
-        hover_data=['Diff']
-    )
-
-    fig2.update_xaxes(
-        rangeslider_visible=True,
-        rangeselector=dict(
-            buttons=list([
-                dict(count=1, label="1m", step="month", stepmode="backward"),
-                dict(count=3, label="3m", step="month", stepmode="backward"),
-                dict(count=6, label="6m", step="month", stepmode="backward"),
-                dict(count=1, label="YTD", step="year", stepmode="todate"),
-                dict(count=1, label="1y", step="year", stepmode="backward"),
-                dict(label="All", step="all")
-            ])
+    else:
+        fig = px.line(data_frame=df_copy, x='Date', y='Diff',
+            title=title_str_2,
+            labels={'Date':"Date", 'Diff':"# of Cases"},
+            hover_data=['Diff']
         )
-    )
 
-    return fig1, fig2
+        fig.update_xaxes(
+            rangeslider_visible=False,
+            rangeselector=dict(
+                buttons=list([
+                    dict(count=1, label="1m", step="month", stepmode="backward"),
+                    dict(count=3, label="3m", step="month", stepmode="backward"),
+                    dict(count=6, label="6m", step="month", stepmode="backward"),
+                    dict(count=1, label="YTD", step="year", stepmode="todate"),
+                    dict(count=1, label="1y", step="year", stepmode="backward"),
+                    dict(label="All", step="all")
+                ])
+            )
+        )
+
+    return fig
 
 if __name__ == '__main__':
     app.run_server(debug=True)
