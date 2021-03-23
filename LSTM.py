@@ -55,7 +55,7 @@ def train_model(model, train_data, train_labels, test_data=None, test_labels=Non
     loss_fn = torch.nn.MSELoss(reduction='sum')
 
     optimiser = torch.optim.Adam(model.parameters(), lr=1e-3)
-    num_epochs = 30
+    num_epochs = 15
 
     train_hist = np.zeros(num_epochs)
     test_hist = np.zeros(num_epochs)

@@ -5,6 +5,8 @@ from torch import nn, optim
 import torch.nn.functional as F
 from sklearn.preprocessing import MinMaxScaler
 from LSTM import *
+from statsmodels.tsa.arima.model import ARIMA
+from statsmodels.tsa.holtwinters import SimpleExpSmoothing, Holt
 
 DAYS_TO_PREDICT = 21
 
@@ -39,6 +41,18 @@ def get_lstm(all_data):
 
     return predicted_cases.tolist()
 
+def get_arima(data):
+    model = ARIMA(data, order=(1,1,1))
+    model = model.fit()
+    preds = model.forecast(DAYS_TO_PREDICT)
+    return preds.tolist()
+
+def get_holt(data):
+    model = Holt(data, damped_trend=True, initialization_method="estimated")
+    model = model.fit(smoothing_level = 0.8, smoothing_trend = 0.2)
+    preds = model.forecast(DAYS_TO_PREDICT)
+    return preds.tolist()
+
 def get_all_preds(df, county):
     result = pd.DataFrame()
     result['Date'] = pd.date_range(
@@ -53,5 +67,13 @@ def get_all_preds(df, county):
     predicted_cases = [x + df[county].iloc[-1] for x in predicted_cases]
     predicted_cases.insert(0, df[county].iloc[-1])
     result['LSTM'] = predicted_cases
+
+    arima_preds = get_arima(df[county].tolist())
+    arima_preds.insert(0, df[county].iloc[-1])
+    result['ARIMA'] = arima_preds
+
+    holt_preds = get_holt(df[county].tolist())
+    holt_preds.insert(0, df[county].iloc[-1])
+    result['Holt'] = holt_preds
 
     return result

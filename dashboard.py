@@ -34,6 +34,7 @@ app.layout = html.Div([
 
     html.Div([
         html.Div([
+            html.Label(['Select County'], style={'font-weight': 'bold', "text-align": "center"}),
             dcc.Dropdown(id='select-county',
                 options = options_list,
                 multi=False,
@@ -41,9 +42,10 @@ app.layout = html.Div([
                 style={'width':'65%'}
             )   
 
-        ], style={"width":"30%", "display":"inline-block", "align-items":"center", "justify-content":"center"}),
+        ], style={"width":"33.3%", "display":"inline-block", "align-items":"center", "justify-content":"center"}),
 
         html.Div([
+            html.Label(['Select Graph Type'], style={'font-weight': 'bold', "text-align": "center"}),
             dcc.Dropdown(id='graph-type',
                 options = [
                     {"label":"Cumulative Cases", "value":"Cumulative"},
@@ -54,20 +56,23 @@ app.layout = html.Div([
                 style={'width':'70%'}
             )
 
-        ], style={"width":"30%", "display":"inline-block", "align-items":"center", "justify-content":"center"}),
+        ], style={"width":"33.3%", "display":"inline-block", "align-items":"center", "justify-content":"center"}),
 
         html.Div([
+            html.Label(['Include Forecasts?'], style={'font-weight': 'bold', "text-align": "center"}),
             dcc.Dropdown(id='pred-type',
                 options = [
-                    #{"label":"All", "value":"All"},
-                    {"label":"None", "value":"None"},
-                    {"label":"LSTM", "value":"LSTM"}
+                    {"label":"Yes", "value":"Yes"},
+                    {"label":"No", "value":"No"}
+                    #{"label":"LSTM", "value":"LSTM"},
+                    #{"label":"ARIMA", "value":"ARIMA"},
+                    #{"label":"Holt", "value":"Holt"}
                 ],
                 multi=False,
-                value="None",
+                value="Yes",
                 style={'width':'65%'}
             )
-        ], style={"width":"30%", "display":"inline-block", "align-items":"center", "justify-content":"center"})
+        ], style={"width":"33.3%", "display":"inline-block", "align-items":"center", "justify-content":"center"})
     ], style={"display":"flex", "align-items":"center", "justify-content":"center"}),
 
     
@@ -110,18 +115,44 @@ def update_graph(county_selected, graph_type, pred_type):
             hover_data=[county_selected]
         )
 
-        if pred_type == 'LSTM':
+        if pred_type == 'Yes':
             
             preds_graph = go.Scatter(
                 x=preds['Date'],
                 y=preds['LSTM'],
                 mode='lines',
                 showlegend=False,
-                name="Forecast"
+                name="LSTM Forecast"
             )
 
-            fig.add_trace(preds_graph)   
-    
+            fig.add_trace(preds_graph) 
+
+        
+        #if pred_type == 'ARIMA' or 'All':
+            
+            preds_graph = go.Scatter(
+                x=preds['Date'],
+                y=preds['ARIMA'],
+                mode='lines',
+                showlegend=False,
+                name="ARIMA Forecast"
+            )
+
+            fig.add_trace(preds_graph)
+
+        
+        #if pred_type == 'Holt' or 'All':
+            
+            preds_graph = go.Scatter(
+                x=preds['Date'],
+                y=preds['Holt'],
+                mode='lines',
+                showlegend=False,
+                name="Holt Forecast"
+            )
+
+            fig.add_trace(preds_graph)
+
     else:
         fig = px.line(data_frame=df, x='Date', y='Diff',
             title=title_str_2,
@@ -129,7 +160,7 @@ def update_graph(county_selected, graph_type, pred_type):
             hover_data=['Diff']
         )
 
-        if pred_type == 'LSTM':
+        if pred_type == 'Yes':
             
             preds_diff = preds['LSTM'].diff().fillna(preds['LSTM'])
             preds_diff.iloc[0] = df['Diff'].iloc[-1]
@@ -139,7 +170,39 @@ def update_graph(county_selected, graph_type, pred_type):
                 y=preds_diff,
                 mode='lines',
                 showlegend=False,
-                name="Forecast"
+                name="LSTM Forecast"
+            )  
+
+            fig.add_trace(preds_graph)
+
+        
+        #if pred_type == 'ARIMA' or 'All':
+            
+            preds_diff = preds['ARIMA'].diff().fillna(preds['ARIMA'])
+            preds_diff.iloc[0] = df['Diff'].iloc[-1]
+
+            preds_graph = go.Scatter(
+                x=preds['Date'],
+                y=preds_diff,
+                mode='lines',
+                showlegend=False,
+                name="ARIMA Forecast"
+            )  
+
+            fig.add_trace(preds_graph)
+
+        
+        #if pred_type == 'Holt' or 'All':
+            
+            preds_diff = preds['Holt'].diff().fillna(preds['Holt'])
+            preds_diff.iloc[0] = df['Diff'].iloc[-1]
+
+            preds_graph = go.Scatter(
+                x=preds['Date'],
+                y=preds_diff,
+                mode='lines',
+                showlegend=False,
+                name="Holt Forecast"
             )  
 
             fig.add_trace(preds_graph)
